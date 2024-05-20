@@ -1,0 +1,139 @@
+﻿@page "/artikuls"
+@inject HttpClient Http
+@inject NavigationManager NavigationManage
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle> Items </PageTitle>
+
+<h1>Items</h1>
+
+<div class="form-inline mb-2">
+    <select class="form-control mr-2" @bind="selectedFilter">
+        <option value="">Select Filter</option>
+        <option value="all">All</option>
+        <option value="priceAbove100">Price Above 100</option>
+        <option value="priceBelow100">Price Below 100</option>
+    </select>
+    <button class="btn btn-primary" @onclick="FilterData">Filter</button>
+</div>
+
+@if (artikuls.Count == 0)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID <button class="btn btn-light btn-sm" @onclick="ToggleSort">Sort</button></th>
+                <th>Name <button class="btn btn-primary btn-sm" @onclick="ToggleSort">Sort</button></th>
+                <th>Price <button class="btn btn-info btn-sm" @onclick="ToggleSort">Sort</button></th>
+                <th>Date <button class="btn btn-warning btn-sm" @onclick="ToggleSort">Sort</button></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var artikul in filteredArtikuls)
+            {
+                <tr>
+                    <td>@artikul.ArtikulID</td>
+                    <td>@artikul.ArtikulName</td>
+                    <td>@artikul.ArtikulPrice</td>
+                    <td>@artikul.ArtikulDate</td>
+                    <td><button class="btn btn-primary" @onclick="@(() => EditArtikul(artikul.ArtikulID))">Edit</button></td>
+                    <td><button class="btn btn-danger" @onclick="@(() => DeleteArtikul(artikul.ArtikulID))">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-primary" @onclick="AddArtikul">Add a new Item</button>
+
+@code {
+    List<Artikul> artikuls = new List<Artikul>();
+    List<Artikul> filteredArtikuls = new List<Artikul>();
+    string selectedFilter = "";
+    string selectedSort = "asc";
+    string selectedSortField = "ID";
+    bool sortAscending = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadArtikuls();
+    }
+
+    async Task LoadArtikuls()
+    {
+        var result = await Http.GetFromJsonAsync<List<Artikul>>("api/artikuls");
+        if (result is not null)
+        {
+            artikuls = result;
+            FilterData(); 
+            SortData(); 
+        }
+    }
+
+    void AddArtikul()
+    {
+        NavigationManage.NavigateTo("edit-artikul");
+    }
+
+    void EditArtikul(int id)
+    {
+        NavigationManage.NavigateTo($"edit-artikul/{id}");
+    }
+
+    async Task DeleteArtikul(int id)
+    {
+        await Http.DeleteAsync($"api/artikuls/{id}");
+        await LoadArtikuls();
+    }
+
+    void FilterData()
+    {
+        switch (selectedFilter)
+        {
+            case "all":
+                filteredArtikuls = new List<Artikul>(artikuls);
+                break;
+            case "priceAbove100":
+                filteredArtikuls = artikuls.Where(a => a.ArtikulPrice > 100).ToList();
+                break;
+            case "priceBelow100":
+                filteredArtikuls = artikuls.Where(a => a.ArtikulPrice <= 100).ToList();
+                break;
+            default:
+                filteredArtikuls = new List<Artikul>(artikuls);
+                break;
+        }
+    }
+
+    void SortData()
+    {
+        switch (selectedSortField)
+        {
+            case "ID":
+                filteredArtikuls = sortAscending ? filteredArtikuls.OrderBy(a => a.ArtikulID).ToList() : filteredArtikuls.OrderByDescending(a => a.ArtikulID).ToList();
+                break;
+            case "Name":
+                filteredArtikuls = sortAscending ? filteredArtikuls.OrderBy(a => a.ArtikulName).ToList() : filteredArtikuls.OrderByDescending(a => a.ArtikulName).ToList();
+                break;
+            case "Price":
+                filteredArtikuls = sortAscending ? filteredArtikuls.OrderBy(a => a.ArtikulPrice).ToList() : filteredArtikuls.OrderByDescending(a => a.ArtikulPrice).ToList();
+                break;
+            case "Date":
+                filteredArtikuls = sortAscending ? filteredArtikuls.OrderBy(a => a.ArtikulDate).ToList() : filteredArtikuls.OrderByDescending(a => a.ArtikulDate).ToList();
+                break;
+        }
+    }
+
+    void ToggleSort()
+    {
+        sortAscending = !sortAscending;
+        SortData();
+    }
+}

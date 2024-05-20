@@ -1,0 +1,32 @@
+﻿@page "/"
+
+@using DevExpress.Blazor
+@using System
+@using System.Timers
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<p>The current time is: @currentTime</p>
+
+@code {
+    private string currentTime;
+
+    protected override void OnInitialized()
+    {
+        UpdateTime();
+
+        // Update time every second (adjust the interval as needed)
+        var timer = new Timer(1000);
+        timer.Elapsed += (sender, e) => UpdateTime();
+        timer.Start();
+    }
+
+    private void UpdateTime()
+    {
+        currentTime = DateTime.Now.ToString("hh:mm:ss tt");
+    }
+}
